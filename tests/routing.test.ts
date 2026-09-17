@@ -155,10 +155,12 @@ describe("results", () => {
   it.each([
     ["creditors_list", {}, { email: null, uid_ch: null }],
     ["debtors_list", {}, { email: null, uid_ch: null }],
-    ["postingaccounts_list", {}, { parent_name: null }],
+    ["postingaccounts_list", {}, { parent_name: null, subtype: null }],
     ["postings_list", { date_from: "2023-01-01", date_to: "2023-01-31" }, { date_delivery: null, booking_number: 1, transaction_amount: null, transaction_id_by_customer: null }],
     ["receipts_list", { list_direction: "inbound" }, { due_date: null, link_to_receipt_id_by_customer: null }],
-    ["transactions_list", {}, { id_by_customer: 123 }],
+    ["transactions_list", {}, { id_by_customer: 123, purpose: null }],
+    ["postings_list", { date_from: "2023-01-01", date_to: "2023-01-31" }, { receipt_id_by_customer: null }],
+    ["receipts_list", { list_direction: "inbound" }, { payment_date: null, account: null, invoicenumber: null, amount: null }],
     ["receipts_list_assigned_transactions", { receipt_id_by_customer: 1 }, { id_by_customer: 123 }],
     ["transactions_list_assigned_receipts", { transaction_id_by_customer: 1 }, { id_by_customer: 123 }],
   ])("preserves observed API response types for %s", async (name, args, row) => {
@@ -208,6 +210,21 @@ describe("results", () => {
     stubFetch({ success: true, data: [{ postingaccount_number: false }] });
     await client.listTools();
     await expect(client.callTool({ name: "accounts_list", arguments: {} }))
+      .rejects.toThrow(/output schema/);
+  });
+
+  it("preserves null detail fields without replacing unknown tax or payment values", async () => {
+    const payload = { success: true, data: { id_by_customer: "123", amount: null, vat: null, payment_date: null, account: null, invoicenumber: null } };
+    stubFetch(payload);
+    await client.listTools();
+    const res = await client.callTool({ name: "receipts_get_by_id", arguments: { id_by_customer: 123 } });
+    expect(res.structuredContent).toEqual(payload);
+  });
+
+  it("still rejects malformed receipt amounts", async () => {
+    stubFetch({ success: true, data: [{ amount: false }] });
+    await client.listTools();
+    await expect(client.callTool({ name: "receipts_list", arguments: { list_direction: "inbound" } }))
       .rejects.toThrow(/output schema/);
   });
 

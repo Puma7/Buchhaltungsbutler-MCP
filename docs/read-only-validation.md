@@ -100,3 +100,18 @@ zustandsverändernde Aktion außerhalb eines reinen Lesetests.
 
 Diese Schritte prüfen die technische Schnittstelle. Sie ersetzen keinen
 Vollständigkeitsabgleich mit Bankauszügen, Originalbelegen oder der Buchhaltung.
+
+### Ergänzende Fälle aus längeren Datenabrufen
+
+- Auch Untertypen von Konten, Beleg-IDs bei Buchungen, Zahlungsdaten,
+  Rechnungsnummern und Beträge können fehlen. Ein `null`-Betrag bleibt unbekannt;
+  er darf weder zu null Euro umgerechnet noch als vollständiger Beleg gewertet werden.
+- Die Belegsortierung erwartet tatsächliche Feldnamen, etwa
+  `order: {"date": "DESC", "amount": "ASC"}`. `field` ist in der Swagger-Datei
+  ein Platzhalter und kein erforderlicher Schlüssel der API.
+- Bei Vergleichen mit Buchhaltungsexporten ID, Datum, Kontierung, Steuerkennzeichen,
+  Betragshöhe und Vorzeichen getrennt prüfen. Unterschiedliche Vorzeichen dürfen
+  nicht ohne Prüfung der jeweiligen Darstellung umgerechnet werden.
+- BWA-/SuSa-Dateien gegen die strukturierte Antwort abgleichen. Erfolgreicher
+  Abruf und `integrityError: false` belegen keine abgeschlossene Buchhaltung;
+  insbesondere `uncompletedPostingsCount` separat dokumentieren.

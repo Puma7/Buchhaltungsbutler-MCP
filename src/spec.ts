@@ -291,10 +291,11 @@ function adjustReadOutput(path: string, schema: JsonSchema): void {
     "/accounts/get": ["postingaccount_number"],
     "/settings/get/creditors": ["email", "uid_ch"],
     "/settings/get/debtors": ["email", "uid_ch"],
-    "/settings/get/postingaccounts": ["parent_name"],
-    "/postings/get": ["date_delivery", "transaction_amount", "transaction_id_by_customer"],
-    "/receipts/get": ["due_date", "link_to_receipt_id_by_customer"],
-    "/receipts/get/id_by_customer": ["amount_original", "currency_original", "exchangerate", "payment_reference", "date_delivery", "date_payment_due", "link_to_receipt_id_by_customer"],
+    "/settings/get/postingaccounts": ["parent_name", "subtype"],
+    "/postings/get": ["date_delivery", "transaction_amount", "transaction_id_by_customer", "receipt_id_by_customer"],
+    "/receipts/get": ["due_date", "link_to_receipt_id_by_customer", "payment_date", "account", "invoicenumber", "amount"],
+    "/receipts/get/id_by_customer": ["amount_original", "currency_original", "exchangerate", "payment_reference", "date_delivery", "date_payment_due", "link_to_receipt_id_by_customer", "vat", "payment_date", "account", "invoicenumber", "amount"],
+    "/transactions/get": ["purpose"],
     "/transactions/get/id_by_customer": ["bank_name", "type", "booking_text"],
   };
   const numeric: Record<string, string[]> = {
@@ -393,6 +394,16 @@ export function buildToolDefs(): ToolDef[] {
         if (arr?.items) enrichItemSchema(arr.items, singleParams);
       }
 
+      if (path === "/receipts/get" && properties.order) {
+        // Swagger's "field" is a placeholder; the API expects actual field names.
+        const directions: JsonSchema = { type: "string", enum: ["ASC", "DESC"] };
+        properties.order = {
+          type: "object",
+          properties: Object.fromEntries(["date", "amount", "invoicenumber", "invoice_number", "invoicingparty", "counterparty"].map(name => [name, { ...directions }])),
+          additionalProperties: false,
+          description: properties.order.description,
+        };
+      }
       // Swagger uses a literal path placeholder and omits its parameter.
       if (path === "/receipts/get/id_by_customer" || path === "/transactions/get/id_by_customer") {
         properties.id_by_customer = { type: "integer", minimum: 1,
