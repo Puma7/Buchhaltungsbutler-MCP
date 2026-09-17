@@ -252,7 +252,7 @@ export const GUIDANCE: Record<string, Guidance> = {
   "/transactions/get": {
     use: "Use to search bank transactions by account and date range.",
     avoid: "To fetch one known transaction, use `transactions_get_by_id`.",
-    note: "Supports `limit` and `offset`; observed `rows` counts only the returned page. Continue paging until empty, deduplicate IDs and check progress. Ask for a bounded date range rather than the full history.",
+    note: "For multi-page exports, prefer `id_by_customer_from` with `limit` and fixed account/date filters: it is exclusive and forces ID-ascending order. Start at 0, then use the greatest returned ID without incrementing it; omit `offset`. Validate IDs and forward progress and continue until empty. Offset pages have overlapped in observed filtered exports; deduplication and an empty final page do not prove completeness. Reconcile IDs/counts and signed amounts independently. `rows` counts the returned page, not the grand total; concurrent changes still need a separate check.",
   },
   "/transactions/get/id_by_customer": {
     use: "Use to fetch a single bank transaction whose id you already have.",

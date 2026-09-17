@@ -242,6 +242,30 @@ describe("results", () => {
   });
 });
 
+describe("transaction pagination remains a transparent single-page call", () => {
+  it("forwards exclusive cursor and fixed filters without adding an offset", async () => {
+    const payload = { success: true, rows: 1, data: [{ id_by_customer: 124, amount: "-12.30" }] };
+    const seen = stubFetch(payload);
+    await client.listTools();
+    const args = { account: 1200, date_from: "2025-01-01", date_to: "2025-12-31", id_by_customer_from: 123, id_by_customer_to: 200, limit: 2 };
+    const res = await client.callTool({ name: "transactions_list", arguments: args });
+    expect(seen).toEqual([{ path: "/transactions/get", body: { api_key: "k", ...args } }]);
+    expect(res.structuredContent).toEqual(payload);
+  });
+
+  it("preserves overlapping page responses so the caller can detect them", async () => {
+    const payload = { success: true, rows: 1, data: [{ id_by_customer: 123, amount: "-12.30" }] };
+    const seen = stubFetch(payload);
+    await client.listTools();
+    for (const offset of [0, 1]) {
+      const res = await client.callTool({ name: "transactions_list", arguments: { limit: 1, offset } });
+      expect(res.structuredContent).toEqual(payload);
+    }
+    expect(seen.map((x) => x.body.offset)).toEqual([0, 1]);
+    expect(seen).toHaveLength(2);
+  });
+});
+
 describe("tool policy still binds through aliases", () => {
   it("an old name cannot reach a tool the allowlist excludes", async () => {
     vi.stubEnv("BB_TOOL_ALLOWLIST", "accounts_list");

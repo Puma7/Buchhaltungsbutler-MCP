@@ -104,7 +104,7 @@ export function createServer(client: BBClient): Server {
         "Amounts use a dot as decimal separator. Dates are 'YYYY-MM-DD'. " +
         "`id_by_customer` is the per-customer counter from the " +
         "BuchhaltungsButler UI, not a global id. Most list tools support " +
-        "`limit` and `offset`. Do not treat `rows` as a grand total: observed responses count only the returned page. Continue to an empty page, deduplicate IDs, and check progress. " +
+        "`limit` and `offset`. Do not treat `rows` as a grand total: observed responses count only the returned page. Detect repeated IDs and missing progress; an empty final page and deduplication do not prove completeness. For transactions, prefer the exclusive `id_by_customer_from` cursor with fixed filters and no offset; reconcile exports independently. " +
         "The `api_key` field defaults to the server configuration; only pass " +
         "it to target a different BB customer account.",
     }

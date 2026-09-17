@@ -463,9 +463,15 @@ Testsuite verwendet synthetische Daten und benötigt keine Zugangsdaten.
   Feld `file` übergeben. `receipts_create` legt Belege ohne Datei an.
 - **Blättern**: Die meisten `list`-Tools akzeptieren `limit` und `offset`. Bei den
   geprüften Beleg-, Transaktions- und Buchungslisten zählt `rows` nur die aktuelle
-  Seite, nicht den Gesamtbestand. Bis zu einer leeren Seite weiterblättern,
-  wiederholte IDs und fehlenden Fortschritt erkennen; `rows` allein ist kein
-  Abbruchkriterium für einen vollständigen Export.
+  Seite, nicht den Gesamtbestand. Wiederholte IDs und fehlenden Fortschritt
+  erkennen. Eine leere Abschlussseite und Deduplizierung beweisen keine
+  Vollständigkeit: gefilterte Transaktionsseiten haben sich im Praxistest
+  überschnitten, während andere IDs fehlten. Für `transactions_list` bevorzugt
+  `id_by_customer_from` mit konstanten Filtern und `limit`, ohne `offset`, nutzen:
+  Der Cursor ist exklusiv und erzwingt aufsteigende ID-Sortierung. Bei 0 beginnen,
+  anschließend die größte erhaltene ID unverändert als nächsten Cursor setzen;
+  IDs und Fortschritt prüfen, bis zur leeren Seite fortsetzen und unabhängig
+  abstimmen. Details und Grenzen: [lesende Verifikation](docs/read-only-validation.md#seitennavigation).
 - **Einzelabrufe**: `receipts_get_by_id` und `transactions_get_by_id` benötigen
   `id_by_customer` als positive ganze Zahl aus dem jeweiligen Listentool. Der
   Server setzt diese Nummer in den API-Pfad ein.

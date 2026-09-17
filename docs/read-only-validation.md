@@ -66,13 +66,42 @@ Bei beobachteten Antworten von `receipts_list`, `transactions_list` und
 `postings_list` ist `rows` die Zahl der **zurückgegebenen** Datensätze. Zwei
 verschiedene Seiten mit je zwei Einträgen können beide `rows: 2` enthalten.
 
-Für einen vollständigen Export mit konstanten Filtern und festem Zeitraum bis
-zu einer leeren Seite weiterblättern. Den Offset anhand der tatsächlich
-empfangenen Datensätze erhöhen, Fortschritt prüfen und stabile IDs deduplizieren.
-Wiederholte Seiten nicht endlos erneut abrufen. Bei Änderungen während des Exports
-kann Offset-Paginierung Einträge verschieben; für Vollständigkeitszusagen braucht
-es einen zusätzlichen Abgleich. Ein Test von zwei Seiten beweist nur, dass
-Paginierung grundsätzlich funktioniert.
+Mit konstanten Filtern und festem Zeitraum bis zu einer leeren Seite lesen,
+aber daraus noch keine Vollständigkeit ableiten. In einem gefilterten
+Transaktionsabruf enthielten Offset-Seiten wiederholte IDs, während andere IDs
+fehlten. Direkte API und MCP lieferten bei identischen Parametern dieselben
+Antworten, einschließlich der Überschneidungen. Das ist kein nachgewiesener
+Datenverlust im MCP-Transport; die genaue serverseitige Ursache ist ungeklärt.
+Nur zu deduplizieren hätte die fehlenden Datensätze nicht wiederhergestellt.
+
+Für `transactions_list` ist laut mitgelieferter API-Spezifikation
+`id_by_customer_from` **exklusiv** und erzwingt `id_by_customer ASC`, auch mit
+Datumsfiltern. Diesen Cursor für längere Transaktionsabrufe bevorzugen:
+
+1. Konto, Datumsgrenzen und gegebenenfalls eine feste obere ID-Grenze konstant
+   halten; mit `id_by_customer_from: 0` und einer begrenzten Seitengröße starten.
+2. `offset` weglassen. Die größte empfangene ID als nächsten Cursor verwenden,
+   **nicht um eins erhöhen**, sonst kann die nächste ID übersprungen werden.
+3. IDs auf gültige ganze Zahlen, Eindeutigkeit und Werte strikt oberhalb des
+   vorherigen Cursors prüfen. Bei Widersprüchen oder fehlendem Fortschritt den
+   Export als unvollständig kennzeichnen; nicht stillschweigend fortsetzen.
+4. Bis zur leeren Seite fortsetzen, eine endliche Seitenobergrenze setzen und
+   Abbruch durch Fehler oder diese Grenze nicht als vollständigen Export werten.
+5. IDs, Anzahl und vorzeichenrichtige Summen zusätzlich gegen eine unabhängige
+   Quelle, etwa Bankauszüge oder einen separat abgeglichenen Gesamtexport, prüfen.
+
+Der Cursor ist keine atomare Momentaufnahme. Änderungen und Löschungen während
+des Abrufs bleiben abzugleichen. Diese Empfehlung gilt speziell für
+Transaktionen; die Cursor-Unterstützung anderer Werkzeuge nicht voraussetzen.
+Bei anderen Offset-Listen den Offset um die tatsächlich empfangene Anzahl
+erhöhen, wiederholte IDs und Fortschritt prüfen und separat abstimmen.
+Ein erfolgreicher Test einzelner Seiten beweist keine vollständige Historie.
+
+Der MCP-Server führt pro Werkzeugaufruf genau einen API-Aufruf aus. Er bietet
+hier keinen automatischen Gesamtexport und repariert keine API-Seiten im
+Hintergrund. Die Regressionstests prüfen deshalb die unveränderte Weitergabe
+der Cursor-/Filterparameter und der Antworten, nicht das Verhalten des externen
+API-Servers.
 
 ### BWA und Summen-/Saldenliste
 
