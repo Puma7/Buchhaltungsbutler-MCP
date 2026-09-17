@@ -452,19 +452,31 @@ npm run list-tools # kategorisierten Tool-Katalog ausgeben (ohne Zugangsdaten)
 Die CI baut und testet jeden Push unter Node 20 und 22; Pushes auf `main` veröffentlichen
 zusätzlich ein Docker-Image in der GitHub Container Registry.
 
+Für eine ergänzende Prüfung mit einem eigenen API-Zugang siehe
+[Lesende API-/MCP-Verifikation](./docs/read-only-validation.md). Die normale
+Testsuite verwendet synthetische Daten und benötigt keine Zugangsdaten.
+
 ## Hinweise & Konventionen
 
 - **Datumsangaben**: `YYYY-MM-DD`. **Beträge**: Punkt als Dezimaltrennzeichen (z. B. `-12.30`).
 - **Datei-Uploads** (`receipts_upload`): Die Datei wird als Base64-Zeichenkette im
   Feld `file` übergeben. `receipts_create` legt Belege ohne Datei an.
-- **Blättern**: Die meisten `list`-Tools akzeptieren `limit` und `offset` und melden
-  die Gesamtzahl in `rows`.
+- **Blättern**: Die meisten `list`-Tools akzeptieren `limit` und `offset`. Bei den
+  geprüften Beleg-, Transaktions- und Buchungslisten zählt `rows` nur die aktuelle
+  Seite, nicht den Gesamtbestand. Bis zu einer leeren Seite weiterblättern,
+  wiederholte IDs und fehlenden Fortschritt erkennen; `rows` allein ist kein
+  Abbruchkriterium für einen vollständigen Export.
+- **Einzelabrufe**: `receipts_get_by_id` und `transactions_get_by_id` benötigen
+  `id_by_customer` als positive ganze Zahl aus dem jeweiligen Listentool. Der
+  Server setzt diese Nummer in den API-Pfad ein.
 - **Anlegen** geht immer über ein Tool, das ein Array nimmt; die Item-Schemata werden
   aus den Spec-Definitionen aufgelöst und dem Modell mitgegeben. Ein einzelner
   Datensatz ist ein Array mit einem Eintrag.
 - **Auswertungen** (BWA, Summen- und Saldenliste) werden asynchron im Hintergrund
   erzeugt: erst `reports_create_*` aufrufen, dann `reports_get_*` mit der zurückgegebenen
   `id_by_customer`. Eine neue Auswertung desselben Typs ersetzt die vorherige.
+- **Kontenblatt**: `reports_get_sums_ledger` benötigt nur Buchungskontonummer und
+  Zeitraum; die API liefert es direkt, ohne vorher erzeugte SuSa und ohne Berichts-ID.
 - **Rate-Limit**: BuchhaltungsButler erlaubt 100 Anfragen/Kunde/Minute; der Server
   drosselt sich selbst bei `BB_RATE_LIMIT` (Standard 90), um sicher darunter zu bleiben.
 
