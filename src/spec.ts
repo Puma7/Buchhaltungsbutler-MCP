@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { categoryForPath, type CategoryMeta } from "./categories.js";
 import { GUIDANCE } from "./guidance.js";
+import { correctPostingInput, correctPostingOutput } from "./write-compat.js";
 import {
   ABSORBED_PATHS,
   MERGED_PATHS,
@@ -208,8 +209,8 @@ function stripResponseEnums(schema: JsonSchema): JsonSchema {
  * Copy parameter descriptions onto identically named fields of a batch item
  * schema. Several batch definitions carry examples but no prose, while their
  * single-record twin documents every field. Only matching names are touched,
- * never renamed: the batch endpoint's own field names stay authoritative
- * (`/postings/add-batch/receipts` really does spell it `postingstexts`).
+ * never renamed here. Known vendor-spec mistakes are corrected separately
+ * before enrichment, so postingtexts receives its single-endpoint guidance.
  */
 function enrichItemSchema(
   itemSchema: JsonSchema,
@@ -356,6 +357,8 @@ export function buildToolDefs(): ToolDef[] {
         if (p.required) required.push(p.name);
       }
 
+      correctPostingInput(path, { properties });
+
       if (merge) {
         const arr = properties[merge.param];
         if (arr?.items) enrichItemSchema(arr.items, singleParams);
@@ -397,6 +400,8 @@ export function buildToolDefs(): ToolDef[] {
       });
     }
   }
+
+  for (const tool of tools) correctPostingOutput(tool.path, tool.outputSchema);
 
   // Stable, category-grouped ordering: reads first, deletes last.
   const order: Record<string, number> = {

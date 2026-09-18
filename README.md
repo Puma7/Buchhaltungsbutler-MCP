@@ -442,6 +442,9 @@ zugeordnete Pfade fallen konservativ auf die Kategorie *create* zurück).
 
 ## Entwicklung
 
+Hinweise zu den korrigierten Buchungsfeldern und zum Umgang mit teilweise
+fehlgeschlagenen Sammelbuchungen: [Belege und Zahlungen buchen](docs/write-postings.md).
+
 ```bash
 npm install
 npm run build      # TypeScript → dist/ kompilieren
